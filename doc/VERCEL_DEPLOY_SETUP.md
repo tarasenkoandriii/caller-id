@@ -15,17 +15,18 @@
 {
   "version": 2,
   "builds": [
-    { "src": "frontend/package.json", "use": "@vercel/static-build", "config": { "distDir": "dist" } },
+    { "src": "frontend/package.json", "use": "@vercel/static-build", "config": { "distDir": "frontend/dist" } },
     { "src": "backend/api/index.ts", "use": "@vercel/node" }
   ],
   "routes": [
     { "src": "/api/(.*)", "dest": "backend/api/index.ts" },
-    { "handle": "filesystem" },
-    { "src": "/(.*)", "dest": "/index.html" }
+    { "src": "/(.+\\.[a-zA-Z0-9]+)$", "dest": "/frontend/dist/$1" },
+    { "src": "/(.*)", "dest": "/frontend/dist/index.html" }
   ]
 }
 ```
 
+**Важно про `distDir` и пути в `routes`:** при нескольких `builds` в одном проекте выход статической сборки остаётся **вложенным** по тому же пути, что и её `src` (`frontend/dist/...`), а не переезжает в корень деплоя — поэтому `distDir` указан как полный путь от корня репозитория (`frontend/dist`, а не просто `dist`), и все `dest` в `routes` явно ссылаются на `/frontend/dist/...`. Второе правило (по расширению файла) обслуживает реальные статические файлы (JS/CSS/иконки), третье — SPA-фолбэк на `index.html` для клиентского роутинга (React Router).
 - `frontend/package.json` собирается как статика (`vite build` → `frontend/dist`) — отдаётся напрямую как обычный сайт.
 - `backend/api/index.ts` — serverless-функция (см. ниже, почему не `src/main.ts`).
 - Весь backend API живёт под единым префиксом **`/api/*`** — специально, чтобы не пересекаться с путями фронтенд-роутинга (`/admin_panel_2026/numbers` — это страница-вкладка React Router, а не бэкенд-эндпоинт; без разделения на `/api/*` эти два "пространства путей" физически совпадали бы).
