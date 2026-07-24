@@ -82,7 +82,7 @@ model TestCallLog {
   updatedAt       DateTime @updatedAt
 }
 
-/** Список номеров для обзвона на клиентской странице "/" — свой у каждого клиента (Google-email или telegram:<id>) */
+// Список номеров для обзвона на клиентской странице "/" — свой у каждого клиента (Google-email или telegram:<id>)
 model ClientContact {
   id          String   @id @default(cuid())
   ownerId     String
@@ -92,11 +92,9 @@ model ClientContact {
   @@unique([ownerId, phoneNumber])
 }
 
-/**
- * Кампания обзвона с публичной страницы "/": один клик "Обзвонить" создаёт
- * одну запись. scheduleType определяет, когда (и как часто) её подхватит
- * cron-диспетчер (см. doc/CLIENT_PAGE_SETUP.md про ограничения Vercel Cron).
- */
+// Кампания обзвона с публичной страницы "/": один клик "Обзвонить" создаёт
+// одну запись. scheduleType определяет, когда (и как часто) её подхватит
+// cron-диспетчер (см. doc/CLIENT_PAGE_SETUP.md про ограничения Vercel Cron).
 model ClientCampaign {
   id              String    @id @default(cuid())
   ownerId         String
