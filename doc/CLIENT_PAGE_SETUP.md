@@ -46,7 +46,7 @@
 
 Режим "Сейчас" работает сразу же и не требует ничего дополнительного.
 Но режимы **"Сегодня в HH:MM"** и **"Каждые N минут"** реально сработают
-только тогда, когда что-то дёрнет `GET /cron/dispatch-campaigns` — сами по
+только тогда, когда что-то дёрнет `GET /api/cron/dispatch-campaigns` — сами по
 себе они просто создают запись в БД со временем следующего запуска
 (`nextRunAt`) и ждут.
 
@@ -73,7 +73,7 @@ Supabase Postgres умеет сам, изнутри базы, каждую ми�
 
 В `backend/vercel.json` уже добавлена конфигурация:
 ```json
-"crons": [{ "path": "/cron/dispatch-campaigns", "schedule": "*/5 * * * *" }]
+"crons": [{ "path": "/api/cron/dispatch-campaigns", "schedule": "*/5 * * * *" }]
 ```
 **Проблема:** расписание чаще одного раза в день (`*/5 * * * *` — это каждые
 5 минут) поддерживается только на платном плане **Vercel Pro**. На **Vercel
@@ -88,7 +88,7 @@ Hobby** Cron Jobs ограничены одним запуском в сутки
 использовать бесплатный внешний cron-сервис (например
 [cron-job.org](https://cron-job.org)), настроив его дёргать:
 ```
-GET https://<backend-domain>.vercel.app/cron/dispatch-campaigns
+GET https://<backend-domain>.vercel.app/api/cron/dispatch-campaigns
 ```
 раз в 1–5 минут. Менее надёжно, чем pg_cron (зависит от аптайма стороннего
 сервиса), но не требует прав на расширения БД.

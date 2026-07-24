@@ -5,7 +5,7 @@ import { ClientCampaignsService } from './client-campaigns.service';
 import { CreateCampaignDto } from './create-campaign.dto';
 import { CallsService } from '../calls/calls.service';
 
-@Controller('client-campaigns')
+@Controller('api/client-campaigns')
 @UseGuards(ClientJwtGuard)
 export class ClientCampaignsController {
   constructor(

@@ -152,7 +152,7 @@ Number is not included in whitelisted countries`, даже при достато
 ## 5. Заказ украинского номера
 
 В проекте это делается автоматически кнопкой **"Добавить номер"** во вкладке
-"Номера" (эндпоинт `POST /admin_panel_2026/telnyx/numbers/order`), но для
+"Номера" (эндпоинт `POST /api/admin_panel_2026/pool/numbers/order`), но для
 понимания — вот что происходит внутри на стороне Telnyx:
 
 1. `GET /v2/available_phone_numbers?filter[country_code]=UA` — поиск доступного номера.
@@ -174,7 +174,7 @@ Number is not included in whitelisted countries`, даже при достато
 1. **Account Settings → Webhooks** (или прямо на странице конкретного number order — Telnyx позволяет задать webhook URL глобально на аккаунт).
 2. Указать URL:
    ```
-   https://<ваш-backend-домен>.vercel.app/telnyx/webhooks/telnyx
+   https://<ваш-backend-домен>.vercel.app/api/telnyx/webhooks/telnyx
    ```
    (без префикса `/admin_panel_2026` — этот путь специально вынесен из-под общего префикса роутинга, см. `backend/src/main.ts`).
 3. Сохранить.
@@ -201,7 +201,7 @@ Telnyx подписывает каждый вебхук Ed25519-подписью
 ```
 PUBLIC_BACKEND_URL=https://<ваш-backend-домен>.vercel.app
 ```
-Из неё бэкенд собирает `https://<домен>/calls/webhooks/telnyx-call` для
+Из неё бэкенд собирает `https://<домен>/api/calls/webhooks/telnyx-call` для
 каждого нового звонка.
 
 **Важно:** пока `PUBLIC_BACKEND_URL` не задан или указывает на `localhost`,
@@ -260,7 +260,7 @@ API) этот шаг не обязателен, но полезен, если ч
 - [ ] Создан именно **Call Control Application** (не SIP Trunking Connection) — см. раздел 4
 - [ ] Создан **Outbound Voice Profile** с разрешённым направлением **Ukraine** и привязан к приложению — см. раздел 4.1
 - [ ] Номер куплен/заказан и привязан к приложению — см. раздел 4.2
-- [ ] Вебхук `number_order.completed` настроен на `/telnyx/webhooks/telnyx`
+- [ ] Вебхук `number_order.completed` настроен на `/api/telnyx/webhooks/telnyx`
 - [ ] Публичный ключ вебхука скопирован в `TELNYX_WEBHOOK_PUBLIC_KEY`
 
 **На стороне проекта (код и деплой):**
@@ -268,10 +268,10 @@ API) этот шаг не обязателен, но полезен, если ч
 - [ ] `PUBLIC_BACKEND_URL` указывает на этот домен
 - [ ] Postgres (Supabase) поднят, `DATABASE_URL` заполнен, `npx prisma migrate deploy` выполнен (включая модели `Voiceover` и `TestCallLog`, добавленные позже первой миграции)
 - [ ] `VOICE_API_KEY` (ElevenLabs) и `BLOB_READ_WRITE_TOKEN` (Vercel Blob) заполнены
-- [ ] Хотя бы один номер в БД проекта имеет статус `active` (иначе `POST /calls/test` вернёт ошибку "нет активного номера")
+- [ ] Хотя бы один номер в БД проекта имеет статус `active` (иначе `POST /api/admin_panel_2026/calls/test` вернёт ошибку "нет активного номера")
 
 **Обновление:** проверка Ed25519-подписи теперь реализована одинаково для
-обоих вебхуков (`telnyx/webhooks/telnyx` и `calls/webhooks/telnyx-call`) —
+обоих вебхуков (`api/telnyx/webhooks/telnyx` и `api/calls/webhooks/telnyx-call`) —
 общая функция вынесена в `backend/src/common/telnyx-signature.util.ts`.
 Как и раньше, при пустом `TELNYX_WEBHOOK_PUBLIC_KEY` проверка пропускается
 (удобно для локальной разработки), но в продакшене переменную обязательно

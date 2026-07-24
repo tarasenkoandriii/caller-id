@@ -17,7 +17,7 @@ import { DidwwService } from './didww.service';
  * DIDWW — ожидаем поля { id, status, type }, как в остальных ресурсах их
  * API, но это стоит подтвердить тестовым вызовом перед продакшеном.
  */
-@Controller('didww/webhooks')
+@Controller('api/didww/webhooks')
 export class DidwwWebhookController {
   private readonly logger = new Logger(DidwwWebhookController.name);
 

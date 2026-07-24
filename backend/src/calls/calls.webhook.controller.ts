@@ -12,7 +12,7 @@ import { ConfigService } from '@nestjs/config';
 import { verifyTelnyxSignature } from '../common/telnyx-signature.util';
 import { CallsService } from './calls.service';
 
-@Controller('calls/webhooks')
+@Controller('api/calls/webhooks')
 export class CallsWebhookController {
   private readonly logger = new Logger(CallsWebhookController.name);
 

@@ -13,7 +13,7 @@ import { TelegramWebAppLoginDto } from '../common/telegram-webapp-login.dto';
  * авторизации. Стандартный паттерн для TMA, где каждый лишний round-trip
  * заметен на старте приложения внутри Telegram WebView.
  */
-@Controller('client-bootstrap')
+@Controller('api/client-bootstrap')
 export class ClientBootstrapController {
   constructor(
     private clientAuth: ClientAuthService,

@@ -1,4 +1,10 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+// Единый деплой (фронтенд + бэкенд в одном Vercel-проекте, см. корневой
+// vercel.json) — по умолчанию запросы идут на тот же домен, относительным
+// путём. VITE_API_URL нужен только если backend всё же развёрнут отдельно
+// (например, при локальной разработке без Docker — тогда это
+// http://localhost:3000). Бэкенд отдаёт админский API строго под
+// /api/admin_panel_2026/* (см. backend/src/bootstrap.ts).
+const API_URL = `${import.meta.env.VITE_API_URL || ''}/api/admin_panel_2026`;
 
 function getToken() {
   return localStorage.getItem('token');

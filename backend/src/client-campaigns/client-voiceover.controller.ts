@@ -4,7 +4,7 @@ import { ClientUser } from '../client-auth/client-user.decorator';
 import { VoiceoverService } from '../voiceover/voiceover.service';
 import { CreateVoiceoverDto } from '../voiceover/create-voiceover.dto';
 
-@Controller('client-voiceovers')
+@Controller('api/client-voiceovers')
 @UseGuards(ClientJwtGuard)
 export class ClientVoiceoverController {
   constructor(private voiceoverService: VoiceoverService) {}

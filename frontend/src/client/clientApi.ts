@@ -1,4 +1,7 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+// Единый деплой — см. комментарий в ../api.ts. Клиентские контроллеры
+// бэкенда живут под /api/* (не под /api/admin_panel_2026 — это только
+// админская часть), например /api/client-auth/google.
+const API_URL = `${import.meta.env.VITE_API_URL || ''}/api`;
 const TOKEN_KEY = 'client_token';
 
 function getToken() {

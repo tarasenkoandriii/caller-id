@@ -1,8 +1,8 @@
 # ==============================================================================
 # ВАЖНО: этот Dockerfile используется ТОЛЬКО для локальной отладки через
-# docker-compose (см. docker-compose.yml в корне проекта). Деплой на
-# Vercel Hobby идёт своим отдельным путём (backend/vercel.json,
-# @vercel/node собирает dist/main.js напрямую) и этот файл не трогает —
+# docker-compose (см. docker-compose.yml в корне проекта). Прод-деплой на
+# Vercel идёт единым деплоем через корневой vercel.json (backend/api/index.ts,
+# @vercel/node) — см. doc/VERCEL_DEPLOY_SETUP.md — и этот файл не трогает,
 # так что Docker и Vercel-деплой полностью независимы друг от друга.
 # ==============================================================================
 
@@ -14,14 +14,16 @@ RUN apk add --no-cache openssl libc6-compat
 # ---- dev: используется docker-compose для локальной разработки с hot-reload ----
 FROM base AS dev
 COPY package*.json ./
-RUN npm install
+# --ignore-scripts: на этом шаге ещё не скопирован prisma/schema.prisma (он
+# копируется чуть ниже, вместе со всем остальным кодом) — без этого флага
+# сработавший postinstall ("prisma generate") упал бы, не найдя схему.
+RUN npm install --ignore-scripts
 COPY . .
-# ВАЖНО: `prisma generate` здесь НЕ вызывается — на этапе сборки образа
-# переменная DATABASE_URL ещё недоступна (.env намеренно не копируется в
-# образ, а сама переменная приходит только через docker-compose при запуске
-# контейнера), а `prisma generate` требует, чтобы env-переменная datasource
-# существовала уже на этапе валидации схемы. Поэтому generate перенесён в
-# docker-entrypoint.sh, который выполняется уже с полным набором env.
+# `prisma generate` вызывается не здесь и не через postinstall, а в
+# docker-entrypoint.sh — на этапе сборки образа переменная DATABASE_URL ещё
+# недоступна (.env намеренно не копируется в образ, значение приходит только
+# через docker-compose при запуске контейнера), а `prisma generate` требует,
+# чтобы env-переменная datasource существовала уже на этапе валидации схемы.
 EXPOSE 3000
 CMD ["sh", "docker-entrypoint.sh"]
 
@@ -33,7 +35,7 @@ FROM base AS build
 # подключение к БД в этой стадии не выполняется.
 ENV DATABASE_URL="postgresql://placeholder:placeholder@localhost:5432/placeholder"
 COPY package*.json ./
-RUN npm ci
+RUN npm ci --ignore-scripts
 COPY . .
 RUN npx prisma generate && npm run build
 
@@ -42,7 +44,7 @@ FROM base AS prod
 ENV NODE_ENV=production
 ENV DATABASE_URL="postgresql://placeholder:placeholder@localhost:5432/placeholder"
 COPY package*.json ./
-RUN npm ci --omit=dev
+RUN npm ci --omit=dev --ignore-scripts
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/prisma ./prisma
 RUN npx prisma generate

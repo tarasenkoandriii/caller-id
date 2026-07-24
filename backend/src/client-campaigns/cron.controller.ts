@@ -18,7 +18,7 @@ import { ClientCampaignsService } from './client-campaigns.service';
  * отвечает на GET (для Vercel Cron) и на POST (для ручного/внешнего вызова,
  * например из cron-job.org, который может слать любой метод).
  */
-@Controller('cron')
+@Controller('api/cron')
 export class CronController {
   constructor(
     private campaignsService: ClientCampaignsService,

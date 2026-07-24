@@ -4,7 +4,7 @@ import { ClientGoogleLoginDto } from './client-google-login.dto';
 import { TelegramAuthDto } from '../common/telegram-auth.dto';
 import { TelegramWebAppLoginDto } from '../common/telegram-webapp-login.dto';
 
-@Controller('client-auth')
+@Controller('api/client-auth')
 export class ClientAuthController {
   constructor(private clientAuthService: ClientAuthService) {}
 

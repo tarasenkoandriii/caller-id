@@ -72,7 +72,7 @@ export class CallsService {
       );
     }
 
-    const webhookUrl = `${publicBackendUrl}/calls/webhooks/telnyx-call`;
+    const webhookUrl = `${publicBackendUrl}/api/calls/webhooks/telnyx-call`;
 
     const order = await this.client.createCall({
       to: toNumber,

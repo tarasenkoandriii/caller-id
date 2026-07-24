@@ -4,7 +4,7 @@ import { ClientUser } from '../client-auth/client-user.decorator';
 import { ClientContactsService } from './client-contacts.service';
 import { CreateClientContactDto } from './create-client-contact.dto';
 
-@Controller('client-contacts')
+@Controller('api/client-contacts')
 @UseGuards(ClientJwtGuard)
 export class ClientContactsController {
   constructor(private contactsService: ClientContactsService) {}

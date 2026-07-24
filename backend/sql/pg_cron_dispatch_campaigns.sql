@@ -21,13 +21,13 @@
 create extension if not exists pg_cron with schema extensions;
 create extension if not exists pg_net with schema extensions;
 
--- 2) Сам job: каждую минуту POST на /cron/dispatch-campaigns
+-- 2) Сам job: каждую минуту POST на /api/cron/dispatch-campaigns
 select cron.schedule(
   'dispatch-client-campaigns',           -- имя job'а (уникальное)
   '* * * * *',                           -- каждую минуту
   $$
   select net.http_post(
-    url     := '<BACKEND_URL>/cron/dispatch-campaigns',
+    url     := '<BACKEND_URL>/api/cron/dispatch-campaigns',
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
       'x-cron-secret', '<CRON_SECRET>'

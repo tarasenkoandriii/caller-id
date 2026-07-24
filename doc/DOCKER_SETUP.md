@@ -52,8 +52,8 @@ docker compose exec backend npx prisma migrate dev --name init
 
 ### Вебхуки Telnyx/DIDWW не достучатся до `localhost`
 
-Все вебхук-эндпоинты проекта (`telnyx/webhooks/telnyx`, `calls/webhooks/telnyx-call`,
-`didww/webhooks/order-status`) требуют, чтобы Telnyx/DIDWW могли выполнить
+Все вебхук-эндпоинты проекта (`api/telnyx/webhooks/telnyx`, `api/calls/webhooks/telnyx-call`,
+`api/didww/webhooks/order-status`) требуют, чтобы Telnyx/DIDWW могли выполнить
 HTTP-запрос на ваш бэкенд — а `localhost:3000` снаружи недоступен. Для
 локальной проверки этих сценариев (например, дождаться `number_order.completed`
 или `call.answered`) нужен туннель наружу, например:
@@ -80,7 +80,7 @@ Postgres в Supabase, где эти расширения включаются о
 продиспетчерить вручную:
 
 ```bash
-curl -X POST http://localhost:3000/cron/dispatch-campaigns \
+curl -X POST http://localhost:3000/api/cron/dispatch-campaigns \
   -H "x-cron-secret: $(grep CRON_SECRET backend/.env | cut -d= -f2)"
 ```
 

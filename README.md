@@ -4,21 +4,21 @@
 обзвона: логин (email/пароль, Google или Telegram), три вкладки — админы,
 номера, озвучка ElevenLabs с пробным SIP-звонком.
 
-Весь фронтенд-роутинг и весь backend API живут под префиксом
-**`/admin_panel_2026`** (кроме вебхуков Telnyx — у них стабильный публичный
-адрес, зарегистрированный в Telnyx Portal, вне префикса), с одним
-исключением: клиентская страница обзвона и её API (см. ниже) намеренно
-живут вне этого префикса.
+**Деплой — один Vercel-проект, один домен** (по образцу SilverFinance): backend
+(NestJS) отдаётся как serverless-функция под `/api/*`, frontend (Vite/React)
+— статикой на том же домене. Конфигурация — в корневом `vercel.json`,
+подробности и почему backend живёт именно под `/api/*` — в
+[`doc/VERCEL_DEPLOY_SETUP.md`](./doc/VERCEL_DEPLOY_SETUP.md).
 
-## Два фронтенда в одном проекте
+## Два фронтенда в одном приложении
 
 - **`/admin_panel_2026`** — внутренняя админка (описана ниже, доступ по
   email+паролю, Google из `ALLOWED_GMAIL_EMAILS` или Telegram из
-  `ALLOWED_TELEGRAM_IDS`).
+  `ALLOWED_TELEGRAM_IDS`). API — `/api/admin_panel_2026/*`.
 - **`/`** — публичная клиентская страница обзвона: свой логин через Google
   или Telegram (без ограничения по списку — открыто всем), список номеров, генерация озвучки,
   запуск обзвона (сейчас / сегодня в HH:MM / каждые N минут) и лог звонков.
-  Подробности и **важная оговорка про Vercel Cron** — в
+  API — `/api/client-*`. Подробности и **важная оговорка про Vercel Cron** — в
   `doc/CLIENT_PAGE_SETUP.md`.
 
 ## Вкладки админки
@@ -38,12 +38,15 @@
 - Локальная отладка через Docker (Postgres + backend + frontend + Adminer одной командой, без влияния на деплой Vercel) — в [`doc/DOCKER_SETUP.md`](./doc/DOCKER_SETUP.md).
 - Вход через Telegram (админка + клиентская страница) — создание бота, `/setdomain`, изоляция данных между Google/Telegram-пользователями — в [`doc/TELEGRAM_LOGIN_SETUP.md`](./doc/TELEGRAM_LOGIN_SETUP.md).
 - Telegram Mini App для клиентской страницы (автологин через `initData`, `/client-bootstrap`, нативная MainButton) — админка при этом остаётся desktop-only — в [`doc/TELEGRAM_MINIAPP_SETUP.md`](./doc/TELEGRAM_MINIAPP_SETUP.md).
+- Настройка деплоя на Vercel для монорепо (Root Directory для `backend`/`frontend` по отдельности, `ignoreCommand`) — в [`doc/VERCEL_DEPLOY_SETUP.md`](./doc/VERCEL_DEPLOY_SETUP.md).
 
 ## Структура
 
 ```
 caller-id/
-├── backend/     NestJS API (Vercel Hobby / serverless-ready)
+├── vercel.json  Единый конфиг деплоя (backend + frontend одним проектом)
+├── backend/     NestJS API — прод: backend/api/index.ts (serverless);
+│                Docker/локально: backend/src/main.ts (app.listen)
 └── frontend/    React + Tailwind + React Router, Vite
 ```
 
@@ -59,9 +62,9 @@ docker compose up --build
 
 Поднимает Postgres + backend (hot-reload) + frontend (Vite dev) + Adminer
 для просмотра БД одной командой, без установки Postgres/Node локально.
-Подробности, типичные проблемы и важные оговорки (вебхуки нужен ngrok,
+Подробности, типичные проблемы и важные оговорки (вебхукам нужен ngrok,
 pg_cron локально недоступен) — в [`doc/DOCKER_SETUP.md`](./doc/DOCKER_SETUP.md).
-**Никак не влияет на деплой на Vercel Hobby** — тот идёт своим путём.
+**Никак не влияет на прод-деплой** — тот идёт единым Vercel-проектом (см. ниже).
 
 ### Вариант 2 — вручную (Node + Postgres на хосте)
 
@@ -79,22 +82,25 @@ npm run start:dev
 
 ```bash
 cd frontend
-cp .env.example .env   # VITE_API_URL=http://localhost:3000
+cp .env.example .env   # VITE_API_URL=http://localhost:3000 (backend и frontend на разных портах — не same-origin)
 npm install
 npm run dev
 # открыть http://localhost:5173/admin_panel_2026
 ```
 
-## Деплой на Vercel Hobby
+## Деплой на Vercel
 
-1. Backend деплоится как отдельный Vercel-проект (serverless functions), `vercel.json` уже настроен.
-2. После первого деплоя узнать публичный домен backend-проекта и прописать его в `PUBLIC_BACKEND_URL` (нужен для вебхука звонков и для того, чтобы Telnyx мог скачать mp3 из Vercel Blob).
-3. Зарегистрировать в Telnyx Portal → Webhooks: `https://<backend-domain>.vercel.app/telnyx/webhooks/telnyx`.
-4. Вебхук звонков регистрируется автоматически на каждый вызов (передаётся в `webhook_url` при создании звонка), отдельно в портале настраивать не нужно.
-5. Frontend деплоится вторым проектом, `VITE_API_URL` указывает на backend-домен. Итоговый адрес админки — `https://<frontend-domain>.vercel.app/admin_panel_2026`.
-6. В Telnyx создать SIP Connection заранее и указать её ID в `TELNYX_CONNECTION_ID`.
-7. Включить [Vercel Blob](https://vercel.com/docs/storage/vercel-blob) в проекте backend, скопировать `BLOB_READ_WRITE_TOKEN`.
-8. Получить ключ ElevenLabs (Profile → API Keys) → `VOICE_API_KEY`.
+Один проект, один домен — backend и frontend деплоятся вместе через
+корневой `vercel.json`. Подробная настройка (Root Directory, переменные
+окружения, почему backend живёт под `/api/*`, актуальные адреса вебхуков)
+— в [`doc/VERCEL_DEPLOY_SETUP.md`](./doc/VERCEL_DEPLOY_SETUP.md). Коротко:
+
+1. **Add New → Project** в Vercel → выбрать репозиторий, **Root Directory оставить пустым** (корень репо).
+2. Добавить в Environment Variables все переменные из `backend/.env.example` и `frontend/.env.example`.
+3. `PUBLIC_BACKEND_URL` — бэкенд сам допишет `/api/...` к нему, задавать нужно как обычный домен без пути.
+4. Зарегистрировать в Telnyx Portal → Webhooks: `https://<domain>/api/telnyx/webhooks/telnyx`.
+5. Включить [Vercel Blob](https://vercel.com/docs/storage/vercel-blob), скопировать `BLOB_READ_WRITE_TOKEN`.
+6. Получить ключ ElevenLabs (Profile → API Keys) → `VOICE_API_KEY`.
 
 ## Переменные окружения (backend/.env)
 
@@ -136,13 +142,13 @@ npm run dev
 
 ## Логика "Добавить номер"
 
-1. `POST /admin_panel_2026/telnyx/numbers/order` → ищет доступный номер UA → создаёт `number_order` в Telnyx → пишет запись в БД со статусом `pending`.
+1. `POST /api/admin_panel_2026/pool/numbers/order` → ищет доступный номер UA → создаёт `number_order` в Telnyx → пишет запись в БД со статусом `pending`.
 2. Telnyx асинхронно шлёт вебхук `number_order.completed` → бэкенд обновляет статус на `active`.
-3. Фронтенд поллит `GET /admin_panel_2026/telnyx/numbers` каждые 5 сек, пока есть номера в статусе `pending`.
+3. Фронтенд поллит `GET /api/admin_panel_2026/pool/numbers` каждые 5 сек, пока есть номера в статусе `pending`.
 
 ## Логика пробного звонка с озвучкой
 
-1. `POST /admin_panel_2026/voiceovers` → ElevenLabs синтезирует mp3 → файл заливается в Vercel Blob (публичный URL) → запись сохраняется в БД.
-2. `POST /admin_panel_2026/calls/test` → берёт первый активный номер из своей БД как `from`, инициирует звонок через Telnyx Call Control API (`POST /calls`) с `webhook_url` на публичный адрес бэкенда.
+1. `POST /api/admin_panel_2026/voiceovers` → ElevenLabs синтезирует mp3 → файл заливается в Vercel Blob (публичный URL) → запись сохраняется в БД.
+2. `POST /api/admin_panel_2026/calls/test` → берёт первый активный номер из своей БД как `from`, инициирует звонок через Telnyx Call Control API (`POST /calls`) с `webhook_url` на публичный адрес бэкенда.
 3. Когда трубку поднимают, Telnyx шлёт вебхук `call.answered` → бэкенд вызывает `playback_start` с `audio_url` сгенерированной озвучки.
 4. `call.hangup` обновляет статус лога звонка на `completed`.

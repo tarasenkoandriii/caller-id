@@ -12,7 +12,7 @@ import { ConfigService } from '@nestjs/config';
 import { verifyTelnyxSignature } from '../common/telnyx-signature.util';
 import { PoolService } from '../pool/pool.service';
 
-@Controller('telnyx/webhooks')
+@Controller('api/telnyx/webhooks')
 export class TelnyxWebhookController {
   private readonly logger = new Logger(TelnyxWebhookController.name);
 

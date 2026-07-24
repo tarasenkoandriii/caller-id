@@ -38,7 +38,7 @@ export class DidwwService {
 
     const publicBackendUrl = this.config.get<string>('PUBLIC_BACKEND_URL');
     const callbackUrl = publicBackendUrl
-      ? `${publicBackendUrl}/didww/webhooks/order-status`
+      ? `${publicBackendUrl}/api/didww/webhooks/order-status`
       : undefined;
 
     const order = await this.client.createOrder(sku.id, 1, callbackUrl);
