@@ -15,7 +15,7 @@
 {
   "version": 2,
   "builds": [
-    { "src": "frontend/package.json", "use": "@vercel/static-build", "config": { "distDir": "frontend/dist" } },
+    { "src": "frontend/package.json", "use": "@vercel/static-build", "config": { "distDir": "dist" } },
     { "src": "backend/api/index.ts", "use": "@vercel/node" }
   ],
   "routes": [
@@ -26,7 +26,8 @@
 }
 ```
 
-**Важно про `distDir` и пути в `routes`:** при нескольких `builds` в одном проекте выход статической сборки остаётся **вложенным** по тому же пути, что и её `src` (`frontend/dist/...`), а не переезжает в корень деплоя — поэтому `distDir` указан как полный путь от корня репозитория (`frontend/dist`, а не просто `dist`), и все `dest` в `routes` явно ссылаются на `/frontend/dist/...`. Второе правило (по расширению файла) обслуживает реальные статические файлы (JS/CSS/иконки), третье — SPA-фолбэк на `index.html` для клиентского роутинга (React Router).
+**Важно про `distDir` и пути в `routes` — это два РАЗНЫХ уровня отсчёта:**
+`distDir` в конфиге билдера считается **относительно папки, где лежит указанный `package.json`** (то есть относительно `frontend/`) — сборка реально запускается с `cwd = frontend/`, поэтому `vite build` кладёт файлы в `frontend/dist/`, и указывать нужно просто `"dist"`, а не `"frontend/dist"` (иначе Vercel будет искать несуществующую `frontend/frontend/dist` и упадёт с `No Output Directory named "dist" found`). А вот в `routes` пути уже отсчитываются от корня всего деплоя — там собранные файлы доступны именно по вложенному пути `/frontend/dist/...`, поэтому `dest` там explicit с префиксом `frontend/`. Второе правило (по расширению файла) обслуживает реальные статические файлы (JS/CSS/иконки), третье — SPA-фолбэк на `index.html` для клиентского роутинга (React Router).
 - `frontend/package.json` собирается как статика (`vite build` → `frontend/dist`) — отдаётся напрямую как обычный сайт.
 - `backend/api/index.ts` — serverless-функция (см. ниже, почему не `src/main.ts`).
 - Весь backend API живёт под единым префиксом **`/api/*`** — специально, чтобы не пересекаться с путями фронтенд-роутинга (`/admin_panel_2026/numbers` — это страница-вкладка React Router, а не бэкенд-эндпоинт; без разделения на `/api/*` эти два "пространства путей" физически совпадали бы).
