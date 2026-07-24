@@ -1,0 +1,11 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-feature-settings: 'tnum' on, 'lnum' on;
+}
+
+.font-mono-num {
+  font-variant-numeric: tabular-nums;
+}

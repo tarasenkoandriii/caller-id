@@ -1,0 +1,111 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+}
+
+model TelnyxSettings {
+  id        String   @id // всегда 'singleton' — одна запись на весь проект
+  useVpn    Boolean  @default(false) // прокси (Webshare/иной) для ВСЕХ запросов к Telnyx API
+  updatedAt DateTime @updatedAt
+}
+
+model TelnyxAccount {
+  id           String   @id @default(cuid())
+  label        String   // человекочитаемое имя аккаунта, например "Основной" или "Резервный EU"
+  apiKey       String   // ключ Telnyx (TODO: в проде — шифровать at-rest, сейчас хранится как есть, см. doc/TELNYX_SETUP.md)
+  connectionId String   // ID Call Control Application для этого аккаунта
+  enabled      Boolean  @default(true)
+  isActive     Boolean  @default(false) // ровно один аккаунт может быть активным — используется по умолчанию для заказа номеров и звонков
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  numbers   PoolNumber[]
+  callLogs  TestCallLog[]
+}
+
+model PoolNumber {
+  id               String   @id @default(cuid())
+  phoneNumber      String   @unique
+  providerNumberId String?  @unique // ID номера на стороне провайдера (Telnyx/DIDWW/DIDLogic)
+  status           String   @default("pending") // pending | active | failed | released
+  provider         String   @default("telnyx")  // telnyx | didww | didlogic
+  connectionId     String?
+  orderId          String?
+  countryCode      String   @default("UA")
+  telnyxAccountId  String?  // заполняется только для provider: 'telnyx' — какой аккаунт владеет номером
+  telnyxAccount    TelnyxAccount? @relation(fields: [telnyxAccountId], references: [id])
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model PoolNumberOrder {
+  id               String   @id @default(cuid())
+  providerOrderId  String   @unique // ID заказа на стороне провайдера
+  provider         String   @default("telnyx")  // telnyx | didww | didlogic
+  phoneNumber      String
+  status           String   @default("pending") // pending | completed | failed
+  failureReason    String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model Voiceover {
+  id         String   @id @default(cuid())
+  text       String
+  voiceId    String
+  voiceName  String?
+  audioUrl   String   // публичный URL mp3 в объектном хранилище — провайдер звонков скачивает его для проигрывания
+  ownerId    String?  // null = создано в админке; иначе идентификатор клиента с "/" (email или telegram:<id>)
+  createdAt  DateTime @default(now())
+}
+
+model TestCallLog {
+  id              String   @id @default(cuid())
+  toNumber        String
+  fromNumber      String
+  voiceoverId     String?
+  provider        String   @default("telnyx")  // telnyx | didww | didlogic
+  providerCallId  String?  @unique // ID звонка на стороне провайдера
+  telnyxAccountId String?  // через какой аккаунт Telnyx пошёл звонок
+  telnyxAccount   TelnyxAccount? @relation(fields: [telnyxAccountId], references: [id])
+  ownerId         String?  // null = тестовый звонок из админки; иначе идентификатор клиента (email или telegram:<id>)
+  campaignId      String?  // если звонок запущен кампанией с публичной страницы
+  status          String   @default("initiated") // initiated | answered | completed | failed
+  failureReason   String?
+  startedAt       DateTime? // время реального ответа (answered) — для длительности в логе клиента
+  endedAt         DateTime? // время завершения (completed/failed) — для длительности
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+/** Список номеров для обзвона на клиентской странице "/" — свой у каждого клиента (Google-email или telegram:<id>) */
+model ClientContact {
+  id          String   @id @default(cuid())
+  ownerId     String
+  phoneNumber String
+  createdAt   DateTime @default(now())
+
+  @@unique([ownerId, phoneNumber])
+}
+
+/**
+ * Кампания обзвона с публичной страницы "/": один клик "Обзвонить" создаёт
+ * одну запись. scheduleType определяет, когда (и как часто) её подхватит
+ * cron-диспетчер (см. doc/CLIENT_PAGE_SETUP.md про ограничения Vercel Cron).
+ */
+model ClientCampaign {
+  id              String    @id @default(cuid())
+  ownerId         String
+  voiceoverId     String
+  scheduleType    String    // "now" | "once" | "interval"
+  scheduleAt      DateTime? // для "once"
+  intervalMinutes Int?      // для "interval"
+  nextRunAt       DateTime? // когда cron должен следующий раз запустить кампанию
+  status          String    @default("scheduled") // scheduled | running | completed | cancelled
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}

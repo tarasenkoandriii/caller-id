@@ -1,0 +1,90 @@
+# ==============================================================================
+# Полная докеризация проекта ДЛЯ ЛОКАЛЬНОЙ ОТЛАДКИ (включая БД).
+#
+# Это не имеет никакого отношения к деплою на Vercel Hobby — тот
+# по-прежнему идёт через backend/vercel.json и frontend/vercel.json
+# напрямую (Vercel не видит и не использует эти Dockerfile'ы вообще).
+# Подробности и типичные проблемы — в doc/DOCKER_SETUP.md.
+#
+# Быстрый старт:
+#   cp backend/.env.example backend/.env    # заполнить реальные ключи
+#   cp frontend/.env.example frontend/.env
+#   docker compose up --build
+#
+# После старта:
+#   backend:  http://localhost:3000
+#   frontend: http://localhost:5173/admin_panel_2026  (и http://localhost:5173/ — клиентская страница)
+#   adminer:  http://localhost:8080  (Система: PostgreSQL, Сервер: db, Логин/пароль: caller_id/caller_id, БД: caller_id)
+# ==============================================================================
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: caller_id
+      POSTGRES_PASSWORD: caller_id
+      POSTGRES_DB: caller_id
+    ports:
+      - '5432:5432'
+    volumes:
+      - caller_id_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U caller_id -d caller_id']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: dev
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - ./backend/.env
+    environment:
+      # Перекрывает DATABASE_URL из backend/.env (там обычно прод-строка
+      # Supabase) — локально всегда ходим в докеризованный Postgres, чтобы
+      # исключить случайное подключение к боевой базе при отладке.
+      DATABASE_URL: postgresql://caller_id:caller_id@db:5432/caller_id
+      PORT: 3000
+    ports:
+      - '3000:3000'
+    volumes:
+      - ./backend:/app
+      - caller_id_backend_node_modules:/app/node_modules
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: dev
+    restart: unless-stopped
+    depends_on:
+      - backend
+    env_file:
+      - ./frontend/.env
+    ports:
+      - '5173:5173'
+    volumes:
+      - ./frontend:/app
+      - caller_id_frontend_node_modules:/app/node_modules
+
+  # Лёгкий веб-интерфейс для просмотра/редактирования локальной БД —
+  # необязателен, но удобен для отладки без установки отдельного клиента.
+  adminer:
+    image: adminer:latest
+    restart: unless-stopped
+    depends_on:
+      - db
+    ports:
+      - '8080:8080'
+
+volumes:
+  caller_id_db_data:
+  caller_id_backend_node_modules:
+  caller_id_frontend_node_modules:
