@@ -39,6 +39,11 @@ export class PoolService {
     const account = await this.telnyxAccounts.getDefaultAccount();
     const apiKey = account?.apiKey;
     const connectionId = account?.connectionId || this.config.get<string>('TELNYX_CONNECTION_ID');
+    if (!connectionId) {
+      throw new BadRequestException(
+        'Не задан TELNYX_CONNECTION_ID — ни у аккаунта, ни в legacy env-переменной',
+      );
+    }
 
     const [balance, connection] = await Promise.all([
       this.client.getBalance(apiKey),

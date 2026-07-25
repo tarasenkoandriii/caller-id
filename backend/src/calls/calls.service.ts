@@ -64,6 +64,11 @@ export class CallsService {
     const apiKey = account?.apiKey;
     const connectionId =
       account?.connectionId || this.config.get<string>('TELNYX_CONNECTION_ID');
+    if (!connectionId) {
+      throw new BadRequestException(
+        'Не задан TELNYX_CONNECTION_ID — ни у аккаунта, ни в legacy env-переменной',
+      );
+    }
 
     const publicBackendUrl = this.config.get<string>('PUBLIC_BACKEND_URL');
     if (!publicBackendUrl) {

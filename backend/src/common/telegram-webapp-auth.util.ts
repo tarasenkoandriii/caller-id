@@ -28,7 +28,7 @@ export interface TelegramWebAppVerifyResult {
 
 export function verifyTelegramWebAppInitData(
   initData: string,
-  botToken: string,
+  botToken: string | undefined,
   maxAgeSeconds = 86400,
 ): TelegramWebAppVerifyResult {
   if (!initData || !botToken) return { valid: false };

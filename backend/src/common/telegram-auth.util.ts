@@ -22,7 +22,7 @@ export interface TelegramAuthData {
  */
 export function verifyTelegramAuth(
   data: TelegramAuthData,
-  botToken: string,
+  botToken: string | undefined,
   maxAgeSeconds = 86400,
 ): boolean {
   if (!botToken) return false;

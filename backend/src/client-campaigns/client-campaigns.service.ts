@@ -153,7 +153,7 @@ export class ClientCampaignsService {
       RETURNING id
     `;
 
-    const results = [];
+    const results: Array<{ campaignId: string; succeeded: number; failed: number }> = [];
     for (const { id } of claimed) {
       results.push({ campaignId: id, ...(await this.dispatch(id, { alreadyClaimed: true })) });
     }
