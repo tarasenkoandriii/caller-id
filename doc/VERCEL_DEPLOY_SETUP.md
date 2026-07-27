@@ -20,14 +20,14 @@
   ],
   "routes": [
     { "src": "/api/(.*)", "dest": "backend/api/index.ts" },
-    { "src": "/(.+\\.[a-zA-Z0-9]+)$", "dest": "/frontend/dist/$1" },
-    { "src": "/(.*)", "dest": "/frontend/dist/index.html" }
+    { "src": "/(.+\\.[a-zA-Z0-9]+)$", "dest": "/frontend/$1" },
+    { "src": "/(.*)", "dest": "/frontend/index.html" }
   ]
 }
 ```
 
 **Важно про `distDir` и пути в `routes` — это два РАЗНЫХ уровня отсчёта:**
-`distDir` в конфиге билдера считается **относительно папки, где лежит указанный `package.json`** (то есть относительно `frontend/`) — сборка реально запускается с `cwd = frontend/`, поэтому `vite build` кладёт файлы в `frontend/dist/`, и указывать нужно просто `"dist"`, а не `"frontend/dist"` (иначе Vercel будет искать несуществующую `frontend/frontend/dist` и упадёт с `No Output Directory named "dist" found`). А вот в `routes` пути уже отсчитываются от корня всего деплоя — там собранные файлы доступны именно по вложенному пути `/frontend/dist/...`, поэтому `dest` там explicit с префиксом `frontend/`. Второе правило (по расширению файла) обслуживает реальные статические файлы (JS/CSS/иконки), третье — SPA-фолбэк на `index.html` для клиентского роутинга (React Router).
+`distDir` в конфиге билдера считается **относительно папки, где лежит указанный `package.json`** (то есть относительно `frontend/`) — сборка реально запускается с `cwd = frontend/`, поэтому `vite build` кладёт файлы в `frontend/dist/`, и указывать нужно просто `"dist"`, а не `"frontend/dist"`. А вот в итоговом **output** деплоя (проверено через вкладку Source → Output конкретного деплоя) содержимое этой папки публикуется **без** сегмента `dist` — то есть реальные пути там `frontend/index.html`, `frontend/assets/...`, а не `frontend/dist/index.html`. Поэтому в `routes` тоже без `dist`. Второе правило (по расширению файла) обслуживает реальные статические файлы (JS/CSS/иконки), третье — SPA-фолбэк на `index.html` для клиентского роутинга (React Router).
 - `frontend/package.json` собирается как статика (`vite build` → `frontend/dist`) — отдаётся напрямую как обычный сайт.
 - `backend/api/index.ts` — serverless-функция (см. ниже, почему не `src/main.ts`).
 - Весь backend API живёт под единым префиксом **`/api/*`** — специально, чтобы не пересекаться с путями фронтенд-роутинга (`/admin_panel_2026/numbers` — это страница-вкладка React Router, а не бэкенд-эндпоинт; без разделения на `/api/*` эти два "пространства путей" физически совпадали бы).
@@ -46,7 +46,7 @@
 
 1. **Add New → Project** → выбрать GitHub-репозиторий `caller-id`.
 2. **Root Directory** — оставить **пустым / корень** (`.`) — НЕ `backend` и НЕ `frontend`. Это ключевое отличие от предыдущей (мультипроектной) схемы.
-3. Framework Preset — Vercel может попытаться угадать фреймворк по корню репозитория и ошибиться; можно оставить **Other** — конкретные шаги сборки уже полностью описаны в корневом `vercel.json`, автодетект не требуется.
+3. **Framework Preset — обязательно проверить и, если не "Other", переключить.** Vercel часто автоопределяет фреймворк по содержимому репозитория (например, находит `nest-cli.json` и выставляет **NestJS**) и в этом случае **игнорирует frontend-часть сборки из `vercel.json` вообще** — билд идёт только для бэкенда, сайт получает `404: NOT_FOUND` на все пути. Проверить: **Settings → Build and Deployment → Framework Preset** → должно быть **Other**. Если стоит что-то другое — сменить на **Other**, **Save**, затем **Redeploy** последний деплой.
 4. **Environment Variables** — добавить **все** переменные из `backend/.env.example` (API-ключи Telnyx/DIDWW/DIDLogic/ElevenLabs, `DATABASE_URL`, `JWT_SECRET`, Google/Telegram креды, `CRON_SECRET` и т.д.) **и** из `frontend/.env.example` (`VITE_GOOGLE_CLIENT_ID`, `VITE_TELEGRAM_BOT_USERNAME`). `VITE_API_URL` можно не задавать вообще — по умолчанию используется пустая строка (тот же домен, относительные пути).
 5. Deploy.
 
