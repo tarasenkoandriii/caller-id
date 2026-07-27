@@ -22,12 +22,40 @@ import { verifyTelegramWebAppInitData } from '../common/telegram-webapp-auth.uti
 @Injectable()
 export class ClientAuthService {
   private googleClient: OAuth2Client;
+  private cachedBotUsername: string | null = null;
 
   constructor(
     private jwt: JwtService,
     private config: ConfigService,
   ) {
     this.googleClient = new OAuth2Client(this.config.get<string>('GOOGLE_CLIENT_ID'));
+  }
+
+  /**
+   * Username бота для Login Widget/Mini App не хранится отдельной
+   * переменной — узнаём его автоматически через Telegram Bot API (`getMe`)
+   * по уже имеющемуся TELEGRAM_BOT_TOKEN. Единственный источник правды —
+   * сам токен; результат кешируется в памяти процесса (username бота не
+   * меняется на лету, лишний запрос к Telegram на каждую загрузку страницы
+   * логина не нужен).
+   */
+  async getTelegramBotUsername(): Promise<string | null> {
+    if (this.cachedBotUsername) return this.cachedBotUsername;
+
+    const botToken = this.config.get<string>('TELEGRAM_BOT_TOKEN');
+    if (!botToken) return null;
+
+    try {
+      const res = await fetch(`https://api.telegram.org/bot${botToken}/getMe`);
+      const body = await res.json();
+      const username = body?.result?.username as string | undefined;
+      if (username) {
+        this.cachedBotUsername = username;
+      }
+      return username || null;
+    } catch {
+      return null;
+    }
   }
 
   async loginWithGoogle(idToken: string) {

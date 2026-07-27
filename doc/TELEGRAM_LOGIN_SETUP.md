@@ -14,10 +14,7 @@ Telegram Login Widget добавлен рядом с Google — в админк�
    ```
    TELEGRAM_BOT_TOKEN=123456789:AAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
    ```
-4. Username бота (без `@`) — во `frontend/.env`:
-   ```
-   VITE_TELEGRAM_BOT_USERNAME=CallerIdLoginBot
-   ```
+4. Username бота фронтенду задавать не нужно — он сам получает его с бэкенда через `GET /api/client-auth/telegram-config`, который узнаёт username автоматически через Telegram Bot API (`getMe`) по уже настроенному `TELEGRAM_BOT_TOKEN`. Единственный источник правды — этот токен, дублировать username в `frontend/.env` не требуется.
 
 Один и тот же бот используется и для админки, и для клиентской страницы —
 разделение по allowlist происходит на бэкенде, а не на уровне бота.
@@ -82,7 +79,6 @@ Telegram подписывает данные виджета HMAC-SHA256 (клю�
 |---|---|---|
 | `TELEGRAM_BOT_TOKEN` | `backend/.env` | Токен бота от @BotFather |
 | `ALLOWED_TELEGRAM_IDS` | `backend/.env` | Numeric ID через запятую — доступ **только в админку** |
-| `VITE_TELEGRAM_BOT_USERNAME` | `frontend/.env` | Username бота без `@` |
 
 ## Полезные ссылки
 
