@@ -22,4 +22,9 @@ export class PoolController {
   orderNumber(@Body() dto: OrderNumberDto) {
     return this.poolService.provisionNewNumber(dto.provider, dto.number);
   }
+
+  @Post('numbers/sync')
+  syncFromTelnyx() {
+    return this.poolService.syncFromTelnyx();
+  }
 }

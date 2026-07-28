@@ -171,13 +171,24 @@ Number is not included in whitelisted countries`, даже при достато
 
 ### 6.1 Вебхук заказа номера
 
-1. **Account Settings → Webhooks** (или прямо на странице конкретного number order — Telnyx позволяет задать webhook URL глобально на аккаунт).
-2. Указать URL:
+**Важно:** в текущей версии портала Telnyx нет отдельной глобальной
+страницы "Account Settings → Webhooks" — вебхуки настраиваются **на
+уровне конкретного Connection/Application**, а не на весь аккаунт разом.
+
+1. Открыть то же самое **Call Control Application** (Voice API Application), которое уже создано в разделе 4 этой инструкции — **Voice → Programmable Voice → Voice API Applications** → выбрать ваше приложение (в примере из этого проекта оно называется `caller-id-callcontrol`).
+2. В настройках приложения найти поле **Webhook URL** (иногда подписано как "Send a webhook to the URL").
+3. Указать:
    ```
-   https://<ваш-backend-домен>.vercel.app/api/telnyx/webhooks/telnyx
+   https://<ваш-домен>.vercel.app/api/telnyx/webhooks/telnyx
    ```
-   (без префикса `/admin_panel_2026` — этот путь специально вынесен из-под общего префикса роутинга, см. `backend/src/main.ts`).
-3. Сохранить.
+   (без префикса `/admin_panel_2026` — этот путь специально вынесен из-под общего префикса роутинга, см. `backend/src/bootstrap.ts`). Для единого деплоя (см. `doc/VERCEL_DEPLOY_SETUP.md`) это тот же домен, на котором открывается вся админка и клиентская страница — не отдельный backend-домен.
+4. Сохранить.
+
+Это то же самое приложение, к которому привязаны номера и через которое
+идут звонки Call Control — один Webhook URL на нём покрывает и события
+номеров (`number_order.completed`), и события звонков (см. 6.3 ниже —
+хотя для звонков URL и так передаётся программно на каждый запрос,
+значение здесь используется только как fallback).
 
 ### 6.2 Публичный ключ для проверки подписи (`TELNYX_WEBHOOK_PUBLIC_KEY`)
 
@@ -185,7 +196,7 @@ Telnyx подписывает каждый вебхук Ed25519-подписью
 `telnyx-signature-ed25519` и `telnyx-timestamp`), чтобы бэкенд мог убедиться,
 что запрос действительно пришёл от Telnyx, а не от третьей стороны.
 
-1. В том же разделе **Webhooks** найти **Public Key** — она отображается рядом с настройками вебхука.
+1. **Account Settings → API Keys → Public Key** (отдельный раздел в левом меню, не привязан к конкретному приложению — один публичный ключ на весь аккаунт).
 2. Скопировать значение (обычно длинная base64-строка) в:
    ```
    TELNYX_WEBHOOK_PUBLIC_KEY=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -199,7 +210,7 @@ Telnyx подписывает каждый вебхук Ed25519-подписью
 `backend/src/calls/calls.service.ts`). Он строится из переменной
 `PUBLIC_BACKEND_URL`:
 ```
-PUBLIC_BACKEND_URL=https://<ваш-backend-домен>.vercel.app
+PUBLIC_BACKEND_URL=https://<ваш-домен>.vercel.app
 ```
 Из неё бэкенд собирает `https://<домен>/api/calls/webhooks/telnyx-call` для
 каждого нового звонка.
@@ -234,7 +245,7 @@ API) этот шаг не обязателен, но полезен, если ч
 |---|---|
 | API-ключ из Account Settings → API Keys | `TELNYX_API_KEY` |
 | ID из Voice → SIP Trunking → ваш коннекшен | `TELNYX_CONNECTION_ID` |
-| Public Key из Account Settings → Webhooks | `TELNYX_WEBHOOK_PUBLIC_KEY` |
+| Public Key из Account Settings → API Keys → Public Key | `TELNYX_WEBHOOK_PUBLIC_KEY` |
 | Домен, на котором задеплоен `backend/` | `PUBLIC_BACKEND_URL` |
 
 ---

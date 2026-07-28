@@ -62,6 +62,8 @@ export const api = {
       body: JSON.stringify({ provider, number }),
     }),
 
+  syncNumbersFromTelnyx: () => request('/pool/numbers/sync', { method: 'POST' }),
+
   getAdmins: () => request('/admins'),
 
   getVoices: () => request('/voiceovers/voices'),

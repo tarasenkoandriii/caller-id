@@ -72,6 +72,63 @@ export class PoolService {
     });
   }
 
+  /**
+   * Ручная синхронизация с Telnyx — на случай, если вебхук
+   * number_order.completed не долетел (например, адрес вебхука в Telnyx
+   * Portal был настроен на устаревший путь, или сам вебхук временно не
+   * отвечал) и номер реально куплен на стороне Telnyx, но в нашей БД его
+   * нет или он "завис" в статусе pending. Подтягивает ВСЕ номера аккаунта
+   * по умолчанию напрямую из Telnyx (GET /phone_numbers) и либо создаёт
+   * недостающие записи, либо обновляет статус уже существующих.
+   */
+  async syncFromTelnyx() {
+    const account = await this.telnyxAccounts.getDefaultAccount();
+    const apiKey = account?.apiKey;
+
+    const owned = await this.client.listOwnedNumbers(apiKey);
+    const numbers = owned.data || [];
+
+    let created = 0;
+    let updated = 0;
+
+    for (const n of numbers) {
+      const phoneNumber = n.phone_number;
+      if (!phoneNumber) continue;
+
+      const status = n.status === 'active' ? 'active' : 'pending';
+      const existing = await this.prisma.poolNumber.findUnique({ where: { phoneNumber } });
+
+      if (existing) {
+        if (existing.status !== status || existing.providerNumberId !== n.id) {
+          await this.prisma.poolNumber.update({
+            where: { phoneNumber },
+            data: { status, providerNumberId: n.id },
+          });
+          updated++;
+        }
+      } else {
+        await this.prisma.poolNumber.create({
+          data: {
+            phoneNumber,
+            status,
+            provider: 'telnyx',
+            providerNumberId: n.id,
+            connectionId: n.connection_id,
+            countryCode: 'UA',
+            telnyxAccountId: account?.id,
+          },
+        });
+        created++;
+      }
+    }
+
+    this.logger.log(
+      `Telnyx sync: ${created} создано, ${updated} обновлено (всего на аккаунте: ${numbers.length})`,
+    );
+
+    return { created, updated, total: numbers.length };
+  }
+
   /** Заказ нового номера — выпадающий список провайдеров на кнопке "Добавить номер" */
   async provisionNewNumber(provider: string = 'telnyx', number?: string) {
     if (!SUPPORTED_PROVIDERS.includes(provider as Provider)) {

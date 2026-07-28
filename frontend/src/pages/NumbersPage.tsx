@@ -11,6 +11,8 @@ export default function NumbersPage() {
   const [numbers, setNumbers] = useState<any[]>([]);
   const [ordering, setOrdering] = useState(false);
   const [orderError, setOrderError] = useState<string | null>(null);
+  const [syncing, setSyncing] = useState(false);
+  const [syncResult, setSyncResult] = useState<string | null>(null);
 
   const loadStatus = useCallback(async () => {
     try {
@@ -53,6 +55,23 @@ export default function NumbersPage() {
     }
   }
 
+  async function handleSync() {
+    setSyncing(true);
+    setSyncResult(null);
+    setOrderError(null);
+    try {
+      const result = await api.syncNumbersFromTelnyx();
+      setSyncResult(
+        `Синхронизировано: ${result.created} новых, ${result.updated} обновлено (всего на аккаунте: ${result.total})`,
+      );
+      await loadNumbers();
+    } catch (err: any) {
+      setOrderError(err.message || 'Не удалось синхронизировать с Telnyx');
+    } finally {
+      setSyncing(false);
+    }
+  }
+
   const activeOrPendingCount = numbers.filter((n) =>
     ['active', 'pending'].includes(n.status),
   ).length;
@@ -67,14 +86,30 @@ export default function NumbersPage() {
             {activeOrPendingCount} / {MAX_NUMBERS} использовано
           </p>
         </div>
-        <ProviderOrderControl
-          onOrder={handleOrder}
-          disabled={limitReached}
-          loading={ordering}
-        />
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleSync}
+            disabled={syncing}
+            className="bg-panel border border-line text-white text-sm font-medium rounded-lg px-4 py-2 hover:border-accent disabled:opacity-40 transition-colors shrink-0"
+            title="Подтянуть номера напрямую из Telnyx, если вебхук не долетел"
+          >
+            {syncing ? 'Синхронизация…' : '↻ Синхронизировать с Telnyx'}
+          </button>
+          <ProviderOrderControl
+            onOrder={handleOrder}
+            disabled={limitReached}
+            loading={ordering}
+          />
+        </div>
       </div>
 
       <StatusBar status={status} />
+
+      {syncResult && (
+        <div className="mb-4 text-sm text-accent bg-accent/10 border border-accent/20 rounded-xl px-4 py-3">
+          {syncResult}
+        </div>
+      )}
 
       {orderError && (
         <div className="mb-4 text-sm text-danger bg-danger/10 border border-danger/20 rounded-xl px-4 py-3">
