@@ -50,6 +50,9 @@ export class CallsWebhookController {
       case 'call.answered':
         await this.callsService.handleCallAnswered(callControlId);
         break;
+      case 'call.playback.ended':
+        await this.callsService.handleCallPlaybackEnded(callControlId);
+        break;
       case 'call.hangup':
         await this.callsService.handleCallHangup(callControlId);
         break;

@@ -129,7 +129,38 @@ export class CallsService {
           ? await this.telnyxAccounts.getById(log.telnyxAccountId)
           : null;
         await this.client.playbackStart(callControlId, voiceover.audioUrl, account?.apiKey);
+        return;
       }
+    }
+
+    // Нет озвучки для проигрывания — вешать трубку сразу же после ответа,
+    // иначе звонок останется висеть без каких-либо дальнейших команд.
+    await this.handleCallPlaybackEnded(callControlId);
+  }
+
+  /**
+   * Событие "проигрывание завершилось" — после того как Telnyx доиграл
+   * mp3 через playback_start. Это одноразовый announcement-звонок (сказать
+   * фразу и повесить трубку), не интерактивный IVR — поэтому вешаем трубку
+   * сразу же, не дожидаясь, пока собеседник положит трубку сам.
+   */
+  async handleCallPlaybackEnded(callControlId: string) {
+    const log = await this.prisma.testCallLog.findUnique({
+      where: { providerCallId: callControlId },
+    });
+    if (!log) return;
+
+    const account = log.telnyxAccountId
+      ? await this.telnyxAccounts.getById(log.telnyxAccountId)
+      : null;
+
+    try {
+      await this.client.hangupCall(callControlId, account?.apiKey);
+    } catch (err: any) {
+      // Звонок мог уже завершиться сам (собеседник положил трубку раньше,
+      // чем доиграла озвучка) — Telnyx в этом случае вернёт ошибку на
+      // попытку повесить уже несуществующий звонок, это не critical.
+      this.logger.warn(`hangupCall after playback failed for ${callControlId}: ${err.message}`);
     }
   }
 
