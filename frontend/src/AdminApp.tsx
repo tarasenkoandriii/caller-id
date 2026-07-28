@@ -19,12 +19,12 @@ export default function AdminApp() {
   return (
     <Routes>
       <Route element={<Layout />}>
-        <Route index element={<Navigate to="admins" replace />} />
+        <Route index element={<Navigate to="telnyx" replace />} />
         <Route path="admins" element={<AdminsPage />} />
         <Route path="numbers" element={<NumbersPage />} />
         <Route path="voiceover" element={<VoiceoverPage />} />
         <Route path="telnyx" element={<TelnyxPage />} />
-        <Route path="*" element={<Navigate to="admins" replace />} />
+        <Route path="*" element={<Navigate to="telnyx" replace />} />
       </Route>
     </Routes>
   );

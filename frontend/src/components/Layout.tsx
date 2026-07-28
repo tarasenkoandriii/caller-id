@@ -2,10 +2,10 @@ import { NavLink, Outlet } from 'react-router-dom';
 import { logout } from '../api';
 
 const TABS = [
-  { to: 'admins', label: 'Админы' },
+  { to: 'telnyx', label: 'Telnyx' },
   { to: 'numbers', label: 'Номера' },
   { to: 'voiceover', label: 'Озвучка' },
-  { to: 'telnyx', label: 'Telnyx' },
+  { to: 'admins', label: 'Админы' },
 ];
 
 export default function Layout() {
